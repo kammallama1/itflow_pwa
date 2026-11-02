@@ -1,18 +1,28 @@
 # ITFlow PWA
 
-A self-hosted, installable mobile and desktop companion for [ITFlow](https://itflow.org). Work tickets in the field, track time, receive notifications and export scheduled work to a personal Microsoft calendar.
+A self-hosted, installable mobile and desktop companion for [ITFlow](https://itflow.org). Work tickets in the field, track time, receive push/email notifications and export scheduled work to Microsoft 365 calendars.
 
-Independent community project by Matt Kammeraad. Not an official ITFlow product. Local PWA accounts are separate from ITFlow accounts; Authentik is not required.
+Independent community project by Matt Kammeraad. Not an official ITFlow product. Local PWA accounts are separate from ITFlow accounts.
 
 ## Features
 
 - Responsive ticket workspace: create tickets, select company/contact/assignee, update assignment/contact, add internal notes or public replies with email, paste/attach images, track time and mark tickets billable.
 - Daily calendar, knowledge browsing, primary asset/document references and API-supported inventory. Public without email and company transfers remain in ITFlow.
-- Browser push with app logo, ticket deep links, preferences and delivery state. Opt-in email for assignments, replies and edits, with SMTP/sender controls. Notification polling uses local Node/API calls, not an AI service.
+- Browser push with app logo, ticket deep links, preferences and delivery state. Opt-in email for assignments, replies and edits, with SMTP/sender controls. Notification polling uses local Node/API calls.
 - Local owner/admin/technician accounts, invitations, password reset links, authenticator MFA, recovery codes, device/session revocation and optional persistent sign-in.
 - One ITFlow instance per deployment. Separate encrypted personal API keys; no fallback to another user's key. Owner-reviewed user mapping gates writes, notifications and calendar export.
 - Shared Microsoft Entra setup in Admin; each user connects their own Microsoft account/calendar under More. One-way ITFlow → Outlook export. See [Microsoft setup](docs/MICROSOFT.md).
 - Admin branding, app title/logo, notifications, SMTP, instance/API mapping, account recovery and optional metadata import.
+
+ ## Screenshots
+
+<img width="342" height="247" alt="home" src="https://github.com/user-attachments/assets/48299a8f-dff5-47c8-9ed5-aeba70c3a5fc" /> <img width="346" height="252" alt="knowledge" src="https://github.com/user-attachments/assets/a304d49d-2a71-406f-aa2c-6af03a7a0ca2" />
+
+<img width="342" height="247" alt="more" src="https://github.com/user-attachments/assets/1bf93ba5-365e-4222-8945-a338da42dd90" /> <img width="347" height="247" alt="admin" src="https://github.com/user-attachments/assets/9b17dd0e-07f6-4c36-962e-9e8e073c677e" />
+
+<img width="290" height="671" alt="home-mobile" src="https://github.com/user-attachments/assets/c0ed364a-2704-4ac5-9ac5-2953dd6d0970" /> <img width="290" height="657" alt="knowledge-mobile" src="https://github.com/user-attachments/assets/39e9d493-3ed6-4cdf-a007-44fee86674f6" />
+
+<img width="290" height="640" alt="more-mobile" src="https://github.com/user-attachments/assets/4471dfc9-ce45-406c-a886-2d32d9636f71" /> <img width="290" height="647" alt="admin-mobile" src="https://github.com/user-attachments/assets/eb450ed7-47ab-4c6c-b0a9-a0e6830b9ef7" />
 
 ### API compatibility
 
