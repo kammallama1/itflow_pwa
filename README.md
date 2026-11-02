@@ -16,9 +16,9 @@ Independent community project by Matt Kammeraad. Not an official ITFlow product.
 
  ## Screenshots
 
-<img width="442" height="347" alt="home" src="https://github.com/user-attachments/assets/48299a8f-dff5-47c8-9ed5-aeba70c3a5fc" /> <img width="446" height="352" alt="knowledge" src="https://github.com/user-attachments/assets/a304d49d-2a71-406f-aa2c-6af03a7a0ca2" />
+<img width="342" height="247" alt="home" src="https://github.com/user-attachments/assets/48299a8f-dff5-47c8-9ed5-aeba70c3a5fc" /> <img width="346" height="252" alt="knowledge" src="https://github.com/user-attachments/assets/a304d49d-2a71-406f-aa2c-6af03a7a0ca2" />
 
-<img width="442" height="347" alt="more" src="https://github.com/user-attachments/assets/1bf93ba5-365e-4222-8945-a338da42dd90" /> <img width="447" height="347" alt="admin" src="https://github.com/user-attachments/assets/9b17dd0e-07f6-4c36-962e-9e8e073c677e" />
+<img width="342" height="247" alt="more" src="https://github.com/user-attachments/assets/1bf93ba5-365e-4222-8945-a338da42dd90" /> <img width="347" height="247" alt="admin" src="https://github.com/user-attachments/assets/9b17dd0e-07f6-4c36-962e-9e8e073c677e" />
 
 <img width="290" height="671" alt="home-mobile" src="https://github.com/user-attachments/assets/c0ed364a-2704-4ac5-9ac5-2953dd6d0970" /> <img width="290" height="657" alt="knowledge-mobile" src="https://github.com/user-attachments/assets/39e9d493-3ed6-4cdf-a007-44fee86674f6" />
 
