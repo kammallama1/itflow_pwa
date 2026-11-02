@@ -1,0 +1,4 @@
+export function validDay(day:string){return /^\d{4}-\d{2}-\d{2}$/.test(day)&&!Number.isNaN(Date.parse(day+'T00:00:00Z'))&&new Date(day+'T00:00:00Z').toISOString().slice(0,10)===day;}
+export function shiftDay(day:string,amount:number){if(!validDay(day))return day;const date=new Date(day+'T00:00:00Z');date.setUTCDate(date.getUTCDate()+amount);return date.toISOString().slice(0,10);}
+export function todayInZone(timezone:string){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());return ['year','month','day'].map(type=>parts.find(p=>p.type===type)!.value).join('-');}
+export function eventOnDay(event:{start:string;end?:string|null},day:string){return validDay(day)&&event.start.slice(0,10)<=day&&(event.end||event.start).slice(0,10)>=day;}

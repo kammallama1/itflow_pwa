@@ -1,0 +1,10 @@
+node_modules/
+dist/
+private/
+.env
+*.sqlite*
+*.db*
+*.jsonl
+verification/
+__pycache__/
+*.pyc

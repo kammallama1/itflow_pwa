@@ -1,0 +1,7 @@
+import React from 'react';
+export async function readImages(files:File[],existing:string[]){
+ if(existing.length+files.length>4)throw Error('Attach up to four images.');const next:string[]=[];
+ for(const file of files){if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>1048576)throw Error('Use PNG, JPEG or WebP images under 1 MiB each.');next.push(await new Promise<string>((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result));r.onerror=()=>reject(Error('Could not read image.'));r.readAsDataURL(file)}))}
+ const combined=[...existing,...next];if(combined.reduce((n,x)=>n+x.length,0)>2800000)throw Error('Images exceed the 2 MiB total limit.');return combined;
+}
+export function ImagePicker({images,onChange,onError}:{images:string[];onChange:(v:string[])=>void;onError:(s:string)=>void}){return <><label className="full-width">Insert images<input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={async e=>{const files=Array.from(e.target.files||[]);e.target.value='';try{onChange(await readImages(files,images))}catch(e){onError((e as Error).message)}}}/></label><p className="quiet">Paste into the description or select up to four images, 1 MiB each / 2 MiB total.</p><div className="attachment-preview full-width">{images.map((src,i)=><figure key={i}><img src={src} alt={'Image '+(i+1)}/><button type="button" onClick={()=>onChange(images.filter((_,n)=>n!==i))}>Remove image {i+1}</button></figure>)}</div></>}

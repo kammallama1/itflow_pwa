@@ -1,0 +1,39 @@
+import {randomBytes,createHmac,createHash,timingSafeEqual} from 'node:crypto';
+const sha=s=>createHash('sha256').update(s).digest('hex');
+const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function base32(bytes){let bits=0,n=0,out='';for(const b of bytes){n=(n<<8)|b;bits+=8;while(bits>=5){bits-=5;out+=alphabet[(n>>>bits)&31]}}if(bits)out+=alphabet[(n<<(5-bits))&31];return out}
+function unbase32(s){let bits=0,n=0,out=[];for(const c of s.replace(/=+$/,'').toUpperCase()){const v=alphabet.indexOf(c);if(v<0)throw Error('Invalid authenticator secret.');n=(n<<5)|v;bits+=5;if(bits>=8){bits-=8;out.push((n>>>bits)&255)}}return Buffer.from(out)}
+export function totp(secret,time=Date.now(),digits=6){const counter=BigInt(Math.floor(time/30000)),b=Buffer.alloc(8);b.writeBigUInt64BE(counter);const h=createHmac('sha1',unbase32(secret)).update(b).digest(),offset=h[h.length-1]&15;return String((h.readUInt32BE(offset)&0x7fffffff)%10**digits).padStart(digits,'0')}
+export function accountSecurity(db,encrypt,decrypt,{now=Date.now}={}){
+ db.exec(`CREATE TABLE IF NOT EXISTS mfa(user_id TEXT PRIMARY KEY,secret TEXT,enabled INTEGER NOT NULL DEFAULT 0,last_counter INTEGER NOT NULL DEFAULT -1,pending TEXT,pending_expires INTEGER NOT NULL DEFAULT 0);
+ CREATE TABLE IF NOT EXISTS mfa_required(user_id TEXT PRIMARY KEY);
+ CREATE TABLE IF NOT EXISTS recovery_codes(hash TEXT PRIMARY KEY,user_id TEXT NOT NULL);
+ CREATE TABLE IF NOT EXISTS mfa_challenges(session_hash TEXT PRIMARY KEY,user_id TEXT NOT NULL,password_version TEXT NOT NULL,remember INTEGER NOT NULL,expires INTEGER NOT NULL,attempts INTEGER NOT NULL DEFAULT 0);
+ CREATE TABLE IF NOT EXISTS session_info(hash TEXT PRIMARY KEY,created INTEGER NOT NULL,seen INTEGER NOT NULL,label TEXT NOT NULL);`);
+ const user=id=>db.prepare('SELECT * FROM users WHERE id=?').get(id),row=id=>db.prepare('SELECT * FROM mfa WHERE user_id=?').get(id);
+ const codeHash=(id,code)=>sha(id+'|recovery|'+String(code||'').replaceAll('-','').replaceAll(' ','').toLowerCase());
+ function active(id){if(user(id)?.status!=='active')throw Error('Account unavailable.')}
+ function matching(secret,code,last=-1){if(typeof code!=='string'||!/^\d{6}$/.test(code.trim()))return null;const current=Math.floor(now()/30000),matches=[];for(let counter=current-1;counter<=current+1;counter++)if(counter>=0&&counter>last&&timingSafeEqual(Buffer.from(totp(secret,counter*30000)),Buffer.from(code.trim())))matches.push(counter);return matches.length?Math.max(...matches):null}
+ function transaction(fn){db.exec('BEGIN IMMEDIATE');try{const r=fn();db.exec('COMMIT');return r}catch(e){db.exec('ROLLBACK');throw e}}
+ function recovery(id){const codes=Array.from({length:10},()=>randomBytes(16).toString('hex').match(/.{4}/g).join('-'));db.prepare('DELETE FROM recovery_codes WHERE user_id=?').run(id);for(const code of codes)db.prepare('INSERT INTO recovery_codes VALUES(?,?)').run(codeHash(id,code),id);return codes}
+ function verify(id,code){active(id);const r=row(id);if(!r?.enabled)return false;
+  const counter=matching(decrypt(r.secret,id+'|mfa-v1'),code,r.last_counter);
+  if(counter!==null)return db.prepare('UPDATE mfa SET last_counter=? WHERE user_id=? AND enabled=1 AND secret=? AND last_counter<?').run(counter,id,r.secret,counter).changes===1;
+  if(!/^[a-f0-9]{32}$/i.test(String(code||'').replaceAll('-','').replaceAll(' ','')))return false;
+  return db.prepare('DELETE FROM recovery_codes WHERE hash=? AND user_id=?').run(codeHash(id,code),id).changes===1;
+ }
+ return {
+  mfaInfo(id){return {enabled:!!row(id)?.enabled,requireEnrollment:!!db.prepare('SELECT user_id FROM mfa_required WHERE user_id=?').get(id),recoveryRemaining:db.prepare('SELECT count(*) AS n FROM recovery_codes WHERE user_id=?').get(id).n}},
+  beginMfa(id,issuer){active(id);if(row(id)?.enabled)throw Error('MFA is already enabled.');const secret=base32(randomBytes(20)),label=String(issuer||'ITFlow PWA').slice(0,80);db.prepare('INSERT INTO mfa(user_id,pending,pending_expires) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET pending=excluded.pending,pending_expires=excluded.pending_expires').run(id,encrypt(secret,id+'|mfa-v1'),now()+600000);return {secret,uri:'otpauth://totp/'+encodeURIComponent(label+':'+user(id).email)+'?secret='+secret+'&issuer='+encodeURIComponent(label)+'&algorithm=SHA1&digits=6&period=30'}},
+  enableMfa(id,code){return transaction(()=>{active(id);const r=row(id);if(!r?.pending||r.enabled||r.pending_expires<now())throw Error('Authenticator setup expired. Start again.');const counter=matching(decrypt(r.pending,id+'|mfa-v1'),code);if(counter===null)throw Error('Authenticator code is incorrect.');db.prepare('UPDATE mfa SET secret=pending,enabled=1,last_counter=?,pending=NULL,pending_expires=0 WHERE user_id=?').run(counter,id);const result={enabled:true,recoveryCodes:recovery(id)};db.prepare('DELETE FROM mfa_required WHERE user_id=?').run(id);return result})},
+  resetMfa(id){return transaction(()=>{if(!user(id))throw Error('Account unavailable.');db.prepare('DELETE FROM mfa WHERE user_id=?').run(id);db.prepare('DELETE FROM recovery_codes WHERE user_id=?').run(id);db.prepare('DELETE FROM mfa_challenges WHERE user_id=?').run(id);db.prepare('DELETE FROM sessions WHERE user_id=?').run(id);db.prepare('INSERT OR IGNORE INTO mfa_required VALUES(?)').run(id);return {reset:true,requireEnrollment:true}})},
+  verifyFactor:verify,
+  disableMfa(id,code){if(!verify(id,code))throw Error('Enter a fresh authenticator code or unused recovery code.');db.prepare('DELETE FROM mfa WHERE user_id=?').run(id);db.prepare('DELETE FROM recovery_codes WHERE user_id=?').run(id);db.prepare('DELETE FROM mfa_challenges WHERE user_id=?').run(id);return {disabled:true}},
+  regenerateRecovery(id,code){if(!verify(id,code))throw Error('Enter a fresh authenticator code or unused recovery code.');return {recoveryCodes:recovery(id)}},
+  challenge(sessionHash,id,remember){active(id);db.prepare('DELETE FROM mfa_challenges WHERE expires<=?').run(now());db.prepare('INSERT INTO mfa_challenges VALUES(?,?,?,?,?,0) ON CONFLICT(session_hash) DO UPDATE SET user_id=excluded.user_id,password_version=excluded.password_version,remember=excluded.remember,expires=excluded.expires,attempts=0').run(sessionHash,id,sha(user(id).password),+remember,now()+300000);return {mfaRequired:true}},
+  completeChallenge(sessionHash,code){const c=db.prepare('SELECT * FROM mfa_challenges WHERE session_hash=?').get(sessionHash);if(!c||c.expires<now()||c.attempts>=5||user(c.user_id)?.status!=='active'||sha(user(c.user_id).password||'')!==c.password_version||!row(c.user_id)?.enabled)throw Error('MFA sign-in expired. Start sign-in again.');db.prepare('UPDATE mfa_challenges SET attempts=attempts+1 WHERE session_hash=?').run(sessionHash);if(!verify(c.user_id,code))throw Error('Authenticator or recovery code is incorrect.');db.prepare('DELETE FROM mfa_challenges WHERE session_hash=?').run(sessionHash);return {id:c.user_id,remember:!!c.remember}},
+  sessions(id,current){return db.prepare('SELECT s.hash,s.expires,i.created,i.seen,i.label FROM sessions s LEFT JOIN session_info i ON i.hash=s.hash WHERE user_id=? AND (expires=0 OR expires>?) ORDER BY i.seen DESC').all(id,now()).map(s=>({id:s.hash,current:s.hash===current,persistent:s.expires===0,expires:s.expires?new Date(s.expires).toISOString():null,created:s.created?new Date(s.created).toISOString():null,lastSeen:s.seen?new Date(s.seen).toISOString():null,label:s.label||'Existing browser session'}))},
+  revokeSession(id,hash){db.prepare('DELETE FROM sessions WHERE user_id=? AND hash=?').run(id,hash);db.prepare('DELETE FROM mfa_challenges WHERE session_hash=? AND user_id=?').run(hash,id)},
+  revokeOthers(id,current){db.prepare('DELETE FROM sessions WHERE user_id=? AND hash<>?').run(id,current);db.prepare('DELETE FROM mfa_challenges WHERE user_id=?').run(id)}
+ };
+}

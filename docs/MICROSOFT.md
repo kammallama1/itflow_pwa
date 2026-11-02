@@ -1,0 +1,9 @@
+# Microsoft 365 calendar export
+
+The administrator registers a single-tenant Microsoft Entra application, adds the exact Web redirect URI shown in Admin (`https://your-pwa.example/api/microsoft/callback`), and configures delegated Microsoft Graph `Calendars.ReadWrite`. The flow also requests OpenID/offline access. Paste the client secret **value**, tenant ID and client ID in Admin. Grant tenant consent if your policy requires it. Do not use application-wide calendar permissions.
+
+Set the ITFlow timezone and enable personal connections in Admin's calendar policy. Each user links an owner-reviewed personal ITFlow API key, then visits More → Microsoft 365 calendar export to connect their own Microsoft account. Load calendars, choose a target (a separate ITFlow calendar is convenient), preview and enable export. Administrators do not need to know user passwords or manually map users to Microsoft mailboxes.
+
+The worker checks every minute. It exports the user's assigned scheduled tickets, seven days back and ninety days ahead, ten changed events per pass. Owner-visible general appointments require optional metadata. Ticket descriptions/notes and attendees are not exported. Outlook changes do not update ITFlow. Deletions, canceled recurrence instances and unassignments require manual Outlook cleanup in this version. Existing exported events remain after disconnect. Reconnect to the same account/calendar to reuse mappings.
+
+Rotate expiring Entra secrets in Admin. Changing application/tenant identity while connections exist requires disconnecting them first. Encrypted tokens depend on the deployment configuration secret; preserve that configuration with backups. Disabling/revoking an account/key or requiring MFA re-enrollment blocks further scheduled work. Already-sent requests cannot be recalled.

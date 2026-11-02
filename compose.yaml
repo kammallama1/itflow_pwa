@@ -1,0 +1,42 @@
+services:
+  app:
+    build: .
+    image: itflow-pwa:0.12.0
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 64
+    tmpfs: [/tmp:rw,noexec,nosuid,size=32m]
+    volumes:
+      - ./private/config.json:/run/secrets/config.json:ro
+      - ./private/data:/data
+    networks:
+      pwa:
+        ipv4_address: 172.31.250.3
+    logging:
+      driver: json-file
+      options: {max-size: 5m, max-file: "3"}
+  proxy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      pwa:
+        ipv4_address: 172.31.250.2
+networks:
+  pwa:
+    ipam:
+      config: [{subnet: 172.31.250.0/24}]
+volumes:
+  caddy_data:
+  caddy_config:

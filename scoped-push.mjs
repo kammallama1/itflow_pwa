@@ -1,0 +1,13 @@
+import {createHash} from 'node:crypto';import path from 'node:path';import {startPush} from './push.mjs';
+export function scopedPush({config,baseConfig,integration,context,readAll,settings,pushOptions={}}){
+ const workers=new Map(),hash=s=>createHash('sha256').update(s).digest('hex');
+ function get(uid){const user=integration.byUid(uid);if(!user)return null;const ctx=integration.context(user);if(!integration.valid(ctx)||!integration.reviewed(ctx))return null;const signature=hash(JSON.stringify([ctx.instance,ctx.credential.envelope,ctx.credential.claimed_id]));const old=workers.get(uid);if(old?.signature===signature)return old.worker;
+ if(old){old.worker.close();workers.delete(uid)}
+ const keyIdentity=hash(JSON.stringify([ctx.instance.apiOrigin,ctx.credential.key,ctx.credential.claimed_id]));let database=path.join(baseConfig.admin.directory,'notifications-'+hash(uid)+'-'+keyIdentity+'.sqlite');
+ if(user.role==='owner'&&baseConfig.push.database){const stored=integration.ownerNotificationKey?.();if(!stored||stored===keyIdentity){integration.setOwnerNotificationKey?.(keyIdentity);database=baseConfig.push.database}}
+ const worker=context.run(ctx,()=>startPush({...baseConfig,allowedUsers:[{uid}],push:{...baseConfig.push,database,itflowUserId:ctx.credential.claimed_id},isCurrent:()=>integration.valid(ctx),notificationTitleTemplate:()=>settings().notificationTitleTemplate,notificationRequireInteraction:()=>settings().notificationRequireInteraction===true,email:{enabled:()=>!!settings().smtp?.enabled,address:async()=>{if(!integration.valid(ctx))return null;return await config.email?.address?.()||user.email},send:(to,event)=>context.run(ctx,()=>config.email.send(to,event))}},(...args)=>context.run(ctx,()=>readAll(...args)),pushOptions));workers.set(uid,{signature,worker});return worker;
+ }
+ const timer=setInterval(()=>{for(const [uid,entry] of workers){const u=integration.byUid(uid);if(!u||!integration.valid(integration.context(u))){entry.worker.close();workers.delete(uid)}}for(const u of integration.users())get(integration.uid(u));},10000);timer.unref();
+ const api=new Proxy({disableDevices(ids){for(const {worker}of workers.values())worker.disableDevices(ids)},close(){clearInterval(timer);return Promise.all([...workers.values()].map(x=>x.worker.close()))}},{get(target,name){if(name in target)return target[name];return (uid,...args)=>{const worker=get(uid);if(!worker){if(name==='status'||name==='emailStatus')return {enabled:false,reason:'Link an owner-reviewed personal ITFlow API key first.'};throw Error('Link an owner-reviewed personal ITFlow API key first.')}return worker[name](uid,...args)}}});
+ for(const u of integration.users())get(integration.uid(u));return api;
+}
