@@ -34,7 +34,7 @@ Users, statuses, Projects/Racks, general appointments, additional asset relation
 
 Requirements: Docker Engine with Compose v2, a domain pointing to this host, ports 80/443 available for HTTPS, and reachable ITFlow HTTPS/API access. No paid service or AI API key is needed. Microsoft export is optional and requires your own tenant/app registration.
 
-1. Download/clone this repository and enter its directory. Set your actual domain and email:
+1. Download/clone this repository and enter its itflow_pwa directory. Set your actual domain and email:
 
    ```sh
    cp .env.example .env
