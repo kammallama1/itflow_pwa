@@ -11,7 +11,7 @@ Independent community project by Matt Kammeraad. Not an official ITFlow product.
 - Browser push with app logo, ticket deep links, preferences and delivery state. Opt-in email for assignments, replies and edits, with SMTP/sender controls. Notification polling uses local Node/API calls.
 - Local owner/admin/technician accounts, invitations, password reset links, authenticator MFA, recovery codes, device/session revocation and optional persistent sign-in.
 - One ITFlow instance per deployment. Separate encrypted personal API keys; no fallback to another user's key. Owner-reviewed user mapping gates writes, notifications and calendar export.
-- Shared Microsoft Entra setup in Admin; each user connects their own Microsoft account/calendar under More. One-way ITFlow → Outlook export. See [Microsoft setup](docs/MICROSOFT.md).
+- Shared Microsoft Entra setup in Admin; each user connects their own Microsoft account/calendar under More. One-way ITFlow → Outlook export. See [Microsoft setup](itflow_pwa/docs/MICROSOFT.md).
 - Admin branding, app title/logo, notifications, SMTP, instance/API mapping, account recovery and optional metadata import.
 
  ## Screenshots
@@ -28,7 +28,7 @@ Independent community project by Matt Kammeraad. Not an official ITFlow product.
 
 This app uses existing ITFlow APIs and does not modify ITFlow source. Endpoint availability and permissions vary by installation. API reads prove key access, **not user identity**; an owner must independently review each ITFlow user ID before approving its mapping. Review does not expand the key's ITFlow permissions.
 
-Users, statuses, Projects/Racks, general appointments, additional asset relationships and exact installed email templates may require the optional read-only [metadata provider](docs/METADATA.md). API-only installations still support tickets, knowledge, time/notes, scheduled-ticket calendars, push and SMTP email. Built-in email templates are used until installed ITFlow templates are imported. Note status and assignment choices depend on configured metadata.
+Users, statuses, Projects/Racks, general appointments, additional asset relationships and exact installed email templates may require the optional read-only [metadata provider](itflow_pwa/docs/METADATA.md). API-only installations still support tickets, knowledge, time/notes, scheduled-ticket calendars, push and SMTP email. Built-in email templates are used until installed ITFlow templates are imported. Note status and assignment choices depend on configured metadata.
 
 ## Docker installation
 
@@ -47,7 +47,7 @@ Requirements: Docker Engine with Compose v2, a domain pointing to this host, por
 
    ```sh
    docker run --rm --user "$(id -u):$(id -g)" \
-     -v "$PWD/private:/setup" --entrypoint node itflow-pwa:0.12.0 \
+     -v "$PWD/private:/setup" --entrypoint node itflow-pwa:0.12.1 \
      cli.mjs init --directory /setup --origin https://pwa.example.com --proxy 172.31.250.2
    sudo chown -R 1000:1000 private/config.json private/data
    docker compose up -d
@@ -61,7 +61,7 @@ Requirements: Docker Engine with Compose v2, a domain pointing to this host, por
 5. Import optional metadata for user/status choices and other unsupported APIs. Configure branding, SMTP and optional Microsoft integration. Invite colleagues; each links their own key. Review each mapping in Admin.
 6. Under **More**, enable push on each device and choose email preferences. New installations start with no subscriptions. On iPhone use Safari → Share → Add to Home Screen, then enable notifications from the installed app. Chrome/Brave may show an install icon when browser requirements are met. Brave may require its Google push-messaging setting.
 
-The bundled Caddy proxy obtains HTTPS certificates. For an existing Nginx/Caddy/Traefik proxy, omit the bundled proxy and adapt the network: configure the app's trusted proxy to its actual TCP peer, preserve the external `Host`, and set `X-Forwarded-Proto: https`. The app rejects untrusted direct access. See [operations](docs/OPERATIONS.md).
+The bundled Caddy proxy obtains HTTPS certificates. For an existing Nginx/Caddy/Traefik proxy, omit the bundled proxy and adapt the network: configure the app's trusted proxy to its actual TCP peer, preserve the external `Host`, and set `X-Forwarded-Proto: https`. The app rejects untrusted direct access. See [operations](itflow_pwa/docs/OPERATIONS.md).
 
 ## Everyday use
 
@@ -73,8 +73,8 @@ Persistent sign-in lasts until logout/revocation while the browser retains its c
 
 ## Upgrade, backup and troubleshooting
 
-See [operations](docs/OPERATIONS.md), [security](SECURITY.md), [feature/acceptance notes](docs/RELEASE.md) and [contributing](CONTRIBUTING.md). Version 0.12.0 is a community release candidate; clean installation and synthetic isolation tests do not establish compatibility with every ITFlow version.
+See [operations](itflow_pwa/docs/OPERATIONS.md), [security](itflow_pwa/SECURITY.md), [feature/acceptance notes](itflow_pwa/docs/RELEASE.md) and [contributing](CONTRIBUTING.md). Version 0.12.1 is a community release candidate; clean installation and synthetic isolation tests do not establish compatibility with every ITFlow version.
 
 ## License and credits
 
-Copyright © 2026 Matt Kammeraad and contributors. Licensed under [GNU GPL version 3](LICENSE), SPDX `GPL-3.0-only`, without warranty. Dependencies retain their own licenses; see [credits](CREDITS.md), [third-party notices](THIRD_PARTY_NOTICES.md) and `THIRD_PARTY_LICENSES/`. ITFlow's name belongs to its project; no endorsement is implied.
+Copyright © 2026 Matt Kammeraad and contributors. Licensed under [GNU GPL version 3](LICENSE), SPDX `GPL-3.0-only`, without warranty. Dependencies retain their own licenses; see [credits](CREDITS.md), [third-party notices](THIRD_PARTY_NOTICES.md) and `itflow_pwa/THIRD_PARTY_LICENSES/`. ITFlow's name belongs to its project; no endorsement is implied.

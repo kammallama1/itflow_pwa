@@ -1,6 +1,6 @@
 # Validation — 2026-11-02
 
-Version 0.12.0 was built from the allowlisted public source, not from a private deployment directory.
+Version 0.12.1 was built from the allowlisted public source, not from a private deployment directory.
 
 - 41 Node tests passed, including clean setup, role checks, encrypted credentials, per-user ticket read/write isolation, owner-reviewed mappings, revoked links, separate push snapshots/deliveries, MFA/recovery, CSRF, durable submission protection and Microsoft account isolation.
 - TypeScript/Vite production build passed. Production npm audit reported no vulnerabilities.
