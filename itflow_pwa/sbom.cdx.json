@@ -22,9 +22,9 @@
       "bom-ref": "itflow-pwa@0.12.0",
       "type": "library",
       "name": "itflow-pwa",
-      "version": "0.12.0",
+      "version": "0.12.1",
       "scope": "required",
-      "purl": "pkg:npm/itflow-pwa@0.12.0",
+      "purl": "pkg:npm/itflow-pwa@0.12.1",
       "properties": [
         {
           "name": "cdx:npm:package:private",

@@ -1,0 +1,16 @@
+**
+!itflow_pwa/
+!itflow_pwa/**
+!LICENSE
+!CREDITS.md
+!THIRD_PARTY_NOTICES.md
+itflow_pwa/node_modules
+itflow_pwa/dist
+itflow_pwa/private
+itflow_pwa/.env
+itflow_pwa/verification
+**/*.sqlite*
+**/*.db*
+**/*.jsonl
+**/__pycache__
+**/*.pyc

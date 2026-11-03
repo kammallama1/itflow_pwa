@@ -1,7 +1,9 @@
 services:
   app:
-    build: .
-    image: itflow-pwa:0.12.0
+    build:
+      context: ..
+      dockerfile: itflow_pwa/Dockerfile
+    image: itflow-pwa:0.12.1
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]

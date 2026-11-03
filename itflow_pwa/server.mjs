@@ -72,18 +72,20 @@ function ticket(t, detail=false) {
 }
 // In-flight coalescing reduces API load without caching ticket data on disk.
 let ticketRequest;
+async function loadTickets(){
+ const rows=await all('tickets');
+ const representatives=[...new Map(rows.map(row=>[String(row.ticket_status),row])).values()];
+ const labels=new Map(await Promise.all(representatives.map(async row=>{
+  const details=await upstream('tickets',{ticket_id:row.ticket_id});
+  return [String(row.ticket_status),details[0]?.ticket_status_name];
+ })));
+ return rows.map(row=>({...row,ticket_status_name:row.ticket_status_name||labels.get(String(row.ticket_status))||(metadata.statuses||[]).find(s=>String(s.id)===String(row.ticket_status))?.name}));
+}
 function tickets() {
-  if(integration)return all('tickets');
-  if(!ticketRequest)ticketRequest=(async()=>{
-    const rows=await all('tickets');
-    const representatives=[...new Map(rows.map(row=>[row.ticket_status,row])).values()];
-    const labels=new Map(await Promise.all(representatives.map(async row=>{
-      const details=await upstream('tickets',{ticket_id:row.ticket_id});
-      return [row.ticket_status,details[0]?.ticket_status_name];
-    })));
-    return rows.map(row=>({...row,ticket_status_name:labels.get(row.ticket_status)}));
-  })().finally(()=>ticketRequest=undefined);
-  return ticketRequest;
+ // Each personal-key request resolves its labels in that same account context.
+ if(integration)return loadTickets();
+ if(!ticketRequest)ticketRequest=loadTickets().finally(()=>ticketRequest=undefined);
+ return ticketRequest;
 }
 function proxyIdentity(req){const ip=req.socket.remoteAddress?.replace(/^::ffff:/,'');return ip===config.trustedProxy&&req.headers.host===new URL(config.origin).host&&(req.headers['x-forwarded-proto']||(config.trustedProxyScheme==='https'?'https':''))==='https'}
 function identity(req) {
@@ -95,7 +97,7 @@ function identity(req) {
 }
 const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json'};
 const push=config.push?.enabled?(integration?scopedPush({config,baseConfig,integration,context:requestContext,readAll:all,settings:()=>admin.settings()}):(await import('./push.mjs')).startPush({...config,notificationTitleTemplate:()=>admin.settings().notificationTitleTemplate,notificationRequireInteraction:()=>admin.settings().notificationRequireInteraction===true},all)):null;
-const release='0.12.0';
+const release='0.12.1';
 function calendarAllowed(uid){if(!integration)return administrator(uid);const u=integration.byUid(uid),ctx=u?integration.context(u):null;return !!ctx&&integration.valid(ctx)&&integration.reviewed(ctx)&&integration.view(u).microsoftPolicy.enabled;}
 const microsoft=config.microsoft?.encryptionKey?microsoftCalendar({directory:config.admin.directory,encryptionKey:config.microsoft.encryptionKey,origin:config.origin,allowedUid:calendarAllowed,source:async uid=>{
  const u=integration?.byUid(uid),ctx=u?integration.context(u):null;
